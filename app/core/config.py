@@ -3,6 +3,7 @@ import logging.config
 import os
 from logging.handlers import TimedRotatingFileHandler
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from pydantic_settings import BaseSettings
 
 
@@ -56,6 +57,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "*"
     APP_NAME: str = "Novel Crawler API"
     DOWNLOAD_FOLDER: str = "downloads"
+    DOWNLOAD_EXPIRE_DAYS: int = 7
 
 
 settings = Settings()
+scheduler = BackgroundScheduler()
+scheduler.start()

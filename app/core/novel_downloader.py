@@ -37,10 +37,8 @@ class NovelDownloader:
         ]
 
         self.app.output_formats = {"epub": True}
-
         logger.info(
-            "**%s**" % self.app.crawler.novel_title,
-            "Downloading %d chapters..." % len(self.app.chapters),
+            f"**{self.app.crawler.novel_title}** Downloading {len(self.app.chapters)} chapters..."
         )
 
         self.app.start_download()

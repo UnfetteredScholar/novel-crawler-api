@@ -1,9 +1,12 @@
 import os
+import shutil
+from datetime import datetime, timedelta
 from logging import getLogger
 from typing import Dict, Literal
 from uuid import uuid4
 
-from core.config import settings
+from apscheduler.triggers.date import DateTrigger
+from core.config import scheduler, settings
 from core.novel_downloader import NovelDownloader
 from fastapi import APIRouter, HTTPException
 from fastapi.background import BackgroundTasks
@@ -16,6 +19,14 @@ router = APIRouter()
 DOWNLOADS = {}
 
 
+def delete_download(output_folder: str):
+    logger = getLogger(__name__ + ".delete_download")
+    if os.path.exists(output_folder):
+        logger.info(f"Removing {output_folder}")
+        shutil.rmtree(path=output_folder)
+        logger.info(f"Removed {output_folder}")
+
+
 def start_download(
     downloader: NovelDownloader,
     output_path: str,
@@ -23,13 +34,27 @@ def start_download(
     end_chapter: int,
 ) -> None:
     """Starts the novel download"""
-    os.makedirs(settings.DOWNLOAD_FOLDER, exist_ok=True)
-    os.makedirs(output_path, exist_ok=True)
-    downloader.download_novel(
-        output_path=output_path,
-        start_chapter=start_chapter,
-        end_chapter=end_chapter,
-    )
+    logger = getLogger(__name__ + ".start_download")
+    try:
+        os.makedirs(settings.DOWNLOAD_FOLDER, exist_ok=True)
+        os.makedirs(output_path, exist_ok=True)
+        downloader.download_novel(
+            output_path=output_path,
+            start_chapter=start_chapter,
+            end_chapter=end_chapter,
+        )
+        run_time = datetime.now() + timedelta(
+            days=settings.DOWNLOAD_EXPIRE_DAYS
+        )
+        kwargs = {"output_folder": output_path}
+        scheduler.add_job(
+            func=delete_download,
+            trigger=DateTrigger(run_date=run_time),
+            kwargs=kwargs,
+        )
+    except Exception as ex:
+        logger.error(ex, stack_info=True)
+        raise ex
 
 
 @router.get(path="/novel/info", response_model=NovelInfo)
