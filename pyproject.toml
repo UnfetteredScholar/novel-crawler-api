@@ -1,0 +1,13 @@
+[project]
+name = "novel-crawler-api"
+version = "0.1.0"
+description = "API for downloading light novels"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{"email"= "atotoffah@gmail.com", "name"="Ato Toffah"}]
+dependencies = [
+    "fastapi>=0.115.8",
+    "lightnovel-crawler>=3.7.5",
+    "pydantic-settings>=2.7.1",
+    "uvicorn>=0.34.0",
+]
