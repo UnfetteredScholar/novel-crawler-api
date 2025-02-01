@@ -46,5 +46,5 @@ app.include_router(router=novel.router, prefix=settings.API_V1_STR, tags=["novel
 app.mount("/", SPAStaticFiles(directory="./frontend/dist", html=True), name="static")
 
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True, log_level="debug")
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True, log_level="debug")

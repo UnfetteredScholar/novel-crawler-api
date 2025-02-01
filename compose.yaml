@@ -1,0 +1,8 @@
+services:
+  novel-crawler-api:
+    build: .
+    ports:
+      - 8000:8000
+    volumes:
+      - ./app/:/app/app:rw
+      - ./frontend/dist/:/app/frontend/dist:rw
