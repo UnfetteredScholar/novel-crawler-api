@@ -8,7 +8,7 @@ A FastAPI-based API for downloading light novels, built with Python, Dockerized 
 - Dockerized setup for easy and reproducible environments.
 - Uses Uv for dependency management, ensuring smooth dependency handling.
 - Integration with [LightNovel Crawler](https://github.com/dipu-bd/lightnovel-crawler/tree/master) to download novels.
-  
+
 ## Prerequisites
 
 Before setting up the project, make sure the following dependencies are installed:
@@ -22,17 +22,20 @@ Before setting up the project, make sure the following dependencies are installe
 ### Option 1: Using Docker (Recommended)
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/UnfetteredScholar/novel-crawler-api.git
    cd novel-crawler-api
    ```
 
 2. Build the Docker image:
+
    ```bash
    docker build -t novel-crawler-api .
    ```
 
 3. Run the Docker container:
+
    ```bash
    docker run -d -p 8000:8000 novel-crawler-api
    ```
@@ -42,25 +45,29 @@ Before setting up the project, make sure the following dependencies are installe
 ### Option 2: Using Virtual Environment
 
 1. Clone this repository:
+
    ```bash
    git clone https://github.com/UnfetteredScholar/novel-crawler-api.git
    cd novel-crawler-api
    ```
 
 2. Create a virtual environment:
+
    ```bash
    python3 -m venv venv
    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
    ```
 
 3. Install dependencies using Uv:
+
    ```bash
    uv install
    ```
 
 4. Run the FastAPI server:
+
    ```bash
-   uv run app.main:app --reload
+   uv run fastapi dev
    ```
 
 5. The API will be available at `http://localhost:8000`. Visit `http://localhost:8000/docs` for interactive API documentation.
@@ -79,14 +86,17 @@ Once the server is up and running, you can access the interactive API documentat
 Download a light novel.
 
 **Path Parameters:**
+
 - `novel_name`: The name of the novel to download.
 
 **Example Request:**
+
 ```bash
 GET http://localhost:8000/download/novel-name
 ```
 
 **Response:**
+
 - Success: 200 OK with the download link.
 - Failure: 400 Bad Request with an error message.
 
