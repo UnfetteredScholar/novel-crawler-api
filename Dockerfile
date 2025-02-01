@@ -1,5 +1,5 @@
 # Throw-away build stage for frontend
-FROM oven/bun:1.2 as build
+FROM oven/bun:1.2 AS build
 
 # Bun app lives here
 WORKDIR /app
