@@ -1,4 +1,5 @@
-import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
+import NavBar from "@/components/nav-bar";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 
 export const Route = createRootRoute({
@@ -8,27 +9,11 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <>
-      <div className="p-2 flex gap-2 text-lg">
-        <Link
-          to="/"
-          activeProps={{
-            className: "font-bold",
-          }}
-          activeOptions={{ exact: true }}
-        >
-          Home
-        </Link>{" "}
-        <Link
-          to="/about"
-          activeProps={{
-            className: "font-bold",
-          }}
-        >
-          About
-        </Link>
+      <div className="bg-background relative flex min-h-screen flex-col font-sans antialiased">
+        <NavBar />
+
+        <Outlet />
       </div>
-      <hr />
-      <Outlet />
       <TanStackRouterDevtools position="bottom-right" />
     </>
   );
