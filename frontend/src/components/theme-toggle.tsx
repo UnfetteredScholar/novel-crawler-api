@@ -12,7 +12,7 @@ export function ThemeToggle() {
     } else if (theme === "light") {
       setTheme("dark");
     }
-  }, [theme]);
+  }, [setTheme, theme]);
 
   return (
     <Button variant="outline" size="icon" onClick={toggleTheme}>
