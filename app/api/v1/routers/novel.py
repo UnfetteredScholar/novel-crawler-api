@@ -19,17 +19,21 @@ router = APIRouter()
 DOWNLOADS = {}
 
 
-def delete_download(output_folder: str):
+def delete_download(id: str):
     logger = getLogger(__name__ + ".delete_download")
+    output_folder = os.path.join(settings.DOWNLOAD_FOLDER, id)
     if os.path.exists(output_folder):
         logger.info(f"Removing {output_folder}")
         shutil.rmtree(path=output_folder)
         logger.info(f"Removed {output_folder}")
+    if id in DOWNLOADS:
+        logger.info("Removing from downloads")
+        del DOWNLOADS[id]
 
 
 def start_download(
     downloader: NovelDownloader,
-    output_path: str,
+    id: str,
     start_chapter: int,
     end_chapter: int,
 ) -> None:
@@ -37,6 +41,7 @@ def start_download(
     logger = getLogger(__name__ + ".start_download")
     try:
         os.makedirs(settings.DOWNLOAD_FOLDER, exist_ok=True)
+        output_path = os.path.join(settings.DOWNLOAD_FOLDER, id)
         os.makedirs(output_path, exist_ok=True)
         downloader.download_novel(
             output_path=output_path,
@@ -46,7 +51,7 @@ def start_download(
         run_time = datetime.now() + timedelta(
             days=settings.DOWNLOAD_EXPIRE_DAYS
         )
-        kwargs = {"output_folder": output_path}
+        kwargs = {"id": id}
         scheduler.add_job(
             func=delete_download,
             trigger=DateTrigger(run_date=run_time),
@@ -54,15 +59,27 @@ def start_download(
         )
     except Exception as ex:
         logger.error(ex, stack_info=True)
+        if id in DOWNLOADS:
+            del DOWNLOADS[id]
         raise ex
 
 
 @router.get(path="/novel/info", response_model=NovelInfo)
-def get_novel_info(url: str) -> NovelInfo:
+def get_novel_info(url: str):  # -> NovelInfo:
     """Gets the novel's information"""
     logger = getLogger(__name__ + ".get_novel_info")
     try:
         downloader = NovelDownloader(user_input=url)
+
+        # info = {
+        #     "title": downloader.app.crawler.novel_title,
+        #     "author": downloader.app.crawler.novel_author,
+        #     "synopsis": downloader.app.crawler.novel_synopsis,
+        #     "tags": downloader.app.crawler.novel_tags,
+        #     "url": downloader.app.crawler.novel_url,
+        #     "volumes": len(downloader.app.crawler.volumes),
+        #     "chapters": len(downloader.app.crawler.chapters),
+        # }
 
         info = NovelInfo(
             title=downloader.app.crawler.novel_title,
@@ -99,14 +116,13 @@ def start_novel_download(
             params.start_chapter = 1
             params.end_chapter = len(downloader.app.crawler.chapters)
         id = str(uuid4())
-        output_folder = os.path.join(settings.DOWNLOAD_FOLDER, id)
 
         DOWNLOADS[id] = downloader
 
         background_tasks.add_task(
             start_download,
             downloader=downloader,
-            output_path=output_folder,
+            id=id,
             start_chapter=params.start_chapter,
             end_chapter=params.end_chapter,
         )

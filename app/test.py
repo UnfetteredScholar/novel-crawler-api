@@ -10,7 +10,9 @@ load_sources()
 # print(crawler_list)
 app = App()
 
-app.user_input = "https://www.royalroad.com/fiction/104629/the-ascendant-realm?utm_source=home&utm_medium=latest-updates"
+app.user_input = (
+    "https://puretl.com/epiphanies-of-rebirth/category/Epiphanies+of+Rebirth"
+)
 
 app.prepare_search()
 disable_search = True
@@ -19,7 +21,7 @@ if app.crawler:
     print("Got your page link")
     app.get_novel_info()
     app.output_path = "../out"
-    app.chapters = app.crawler.chapters[:]
+    app.chapters = app.crawler.chapters[0:2]
     app.output_formats = {"epub": True, "text": True, "web": True}
     app.pack_by_volume = False
     print(

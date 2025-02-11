@@ -1,7 +1,7 @@
 # from enum import Enum
-from typing import List, Optional
+from typing import Annotated, Any, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
 
 # class OutputFormat(str, Enum):
 #     json = "json"
@@ -24,11 +24,21 @@ from pydantic import BaseModel
 # tcr = "tcr"
 
 
+def verify_tags(val: Any) -> List[str]:
+    if type(val) is str:
+        if val == "":
+            val = []
+        else:
+            val = val.split(",")
+
+    return val
+
+
 class NovelInfo(BaseModel):
     title: str
     author: str
     synopsis: str
-    tags: List[str]
+    tags: Annotated[List[str], BeforeValidator(verify_tags)]
     url: str
     chapters: int
     volumes: int
