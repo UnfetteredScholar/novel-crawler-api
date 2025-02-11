@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { ThemeProvider } from "./components/theme-provider";
 
 const router = createRouter({
   routeTree,
@@ -21,7 +22,9 @@ if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <React.StrictMode>
-      <RouterProvider router={router} />
-    </React.StrictMode>
+      <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </React.StrictMode>,
   );
 }
