@@ -12,17 +12,18 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 
-import { Button } from "./ui/button";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "../ui/button";
+import { useCallback, useMemo } from "react";
 import { useAction } from "@/hooks/use-action";
 import { db } from "@/lib/dexie";
 import { NovelDownloadOptions } from "@/types/request-types";
 import { StartNovelDownload } from "@/types/response-types";
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
+import { VList } from "virtua";
+import useValues from "./use-values";
 
 export default function AddNovelDialog() {
   const [, action, pending] = useAction(
@@ -58,61 +59,18 @@ export default function AddNovelDialog() {
     },
   );
   const [open, setOpen] = useAddNovelDialog();
-  const [startChapter, setStartChapter] = useState<number | null>(null);
-  const [endChapter, setEndChapter] = useState<number | null>(null);
-
-  const chapters = useMemo(
-    () => (open ? Array.from({ length: open.chapters }, (_, i) => i + 1) : []),
-    [open],
-  );
-
-  const hasChapters = chapters.length > 0;
-
-  const isSelectable = chapters.length >= 2;
-
-  useEffect(() => {
-    if (isSelectable) {
-      setStartChapter(chapters[0]);
-      setEndChapter(chapters.at(-1)!);
-    }
-  }, [chapters, isSelectable]);
-
-  const startOptions = useMemo(
-    () =>
-      isSelectable
-        ? chapters.filter((chapter) =>
-            endChapter ? chapter < endChapter : true,
-          )
-        : [],
-    [chapters, endChapter, isSelectable],
-  );
-
-  const endOptions = useMemo(
-    () =>
-      isSelectable
-        ? chapters.filter((chapter) =>
-            startChapter ? chapter > startChapter : true,
-          )
-        : [],
-    [chapters, isSelectable, startChapter],
-  );
-
-  const intervalChapters = useMemo(
-    () =>
-      isSelectable && startChapter && endChapter
-        ? chapters.filter(
-            (chapter) => chapter >= startChapter && chapter <= endChapter,
-          )
-        : [],
-    [chapters, endChapter, isSelectable, startChapter],
-  );
-
-  const isValidSelection =
-    hasChapters &&
-    (!isSelectable ||
-      (startChapter !== null &&
-        endChapter !== null &&
-        startChapter < endChapter));
+  const {
+    startChapter,
+    setEndChapter,
+    endChapter,
+    setStartChapter,
+    hasChapters,
+    isSelectable,
+    endOptions,
+    startOptions,
+    intervalChapters,
+    isValidSelection,
+  } = useValues(open);
 
   const selectComponents = useMemo(() => {
     if (!hasChapters) {
@@ -142,14 +100,16 @@ export default function AddNovelDialog() {
             onValueChange={(value: string) => setStartChapter(parseInt(value))}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Start" />
+              {startChapter ? `Chapter ${startChapter}` : "Start"}
             </SelectTrigger>
             <SelectContent>
-              {startOptions.map((chapter) => (
-                <SelectItem key={chapter} value={chapter.toString()}>
-                  Chapter {chapter}
-                </SelectItem>
-              ))}
+              <VList style={{ height: 300 }} className="">
+                {startOptions.map((chapter) => (
+                  <SelectItem key={chapter} value={chapter.toString()}>
+                    Chapter {chapter}
+                  </SelectItem>
+                ))}
+              </VList>
             </SelectContent>
           </Select>
         </div>
@@ -162,14 +122,16 @@ export default function AddNovelDialog() {
             onValueChange={(value: string) => setEndChapter(parseInt(value))}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="End" />
+              {endChapter ? `Chapter ${endChapter}` : "End"}
             </SelectTrigger>
             <SelectContent>
-              {endOptions.map((chapter) => (
-                <SelectItem key={chapter} value={chapter.toString()}>
-                  Chapter {chapter}
-                </SelectItem>
-              ))}
+              <VList style={{ height: 300 }} className="">
+                {endOptions.map((chapter) => (
+                  <SelectItem key={chapter} value={chapter.toString()}>
+                    Chapter {chapter}
+                  </SelectItem>
+                ))}
+              </VList>
             </SelectContent>
           </Select>
         </div>
@@ -180,6 +142,8 @@ export default function AddNovelDialog() {
     endOptions,
     hasChapters,
     isSelectable,
+    setEndChapter,
+    setStartChapter,
     startChapter,
     startOptions,
   ]);

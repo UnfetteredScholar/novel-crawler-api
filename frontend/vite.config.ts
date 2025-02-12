@@ -3,9 +3,20 @@ import react from "@vitejs/plugin-react";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import path from "path";
 
+const ReactCompilerConfig = {
+  // target: '18' // '17' | '18' | '19'
+};
+
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [TanStackRouterVite({}), react()],
+  plugins: [
+    TanStackRouterVite({}),
+    react({
+      babel: {
+        plugins: [["babel-plugin-react-compiler", ReactCompilerConfig]],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),

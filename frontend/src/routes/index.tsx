@@ -8,8 +8,10 @@ export const Route = createFileRoute("/")({
 
 function HomeComponent() {
   return (
-    <div className="max-width-container flex flex-col gap-8 py-8">
+    <div className="max-width-container flex flex-col gap-6 py-8">
       <NovelInput />
+
+      <hr className="w-11/12 self-center" />
 
       <NovelList />
     </div>

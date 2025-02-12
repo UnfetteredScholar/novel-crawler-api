@@ -69,4 +69,7 @@
   .max-width-container {
     @apply mx-auto w-full max-w-7xl px-4;
   }
+  .scrollbar-none::-webkit-scrollbar {
+    width: 0px;
+  }
 }
