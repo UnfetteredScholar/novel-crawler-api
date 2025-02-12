@@ -17,8 +17,46 @@ import {
 
 import { Button } from "./ui/button";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAction } from "@/hooks/use-action";
+import { db } from "@/lib/dexie";
+import { NovelDownloadOptions } from "@/types/request-types";
+import { StartNovelDownload } from "@/types/response-types";
+import { toast } from "sonner";
+import { LoaderCircle } from "lucide-react";
 
 export default function AddNovelDialog() {
+  const [, action, pending] = useAction(
+    async (params: NovelDownloadOptions) => {
+      try {
+        const res = await fetch(`/api/v1/novel/downloads`, {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify(params),
+        });
+
+        if (!res.ok) {
+          const error = (await res.json()) as { detail: string };
+          throw new Error(error.detail);
+        }
+
+        const data = (await res.json()) as StartNovelDownload;
+        db.novels.add({
+          id: data.download_id,
+          url: params.url,
+          title: params.title,
+          chapters: params.chapters,
+          progress: 0,
+          createdAt: new Date(),
+        });
+        setOpen(false);
+      } catch (error) {
+        if (!(error instanceof Error)) return;
+        toast.error(error.message);
+      }
+    },
+  );
   const [open, setOpen] = useAddNovelDialog();
   const [startChapter, setStartChapter] = useState<number | null>(null);
   const [endChapter, setEndChapter] = useState<number | null>(null);
@@ -162,12 +200,22 @@ export default function AddNovelDialog() {
 
   const handleSubmit = useCallback(async () => {
     if (!open) return;
-    console.log({
+    action({
       url: open.url,
       start_chapter: startChapter,
       end_chapter: endChapter,
+      title: open.title,
+      chapters: isSelectable ? intervalChapters.length : open.chapters,
     });
-  }, [endChapter, open, startChapter]);
+  }, [
+    action,
+    endChapter,
+    intervalChapters.length,
+    isSelectable,
+    open,
+    startChapter,
+  ]);
+
   return (
     <Dialog
       open={!!open}
@@ -199,7 +247,15 @@ export default function AddNovelDialog() {
           {chapterList}
 
           <DialogFooter>
-            <Button onClick={handleSubmit} disabled={!isValidSelection}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!isValidSelection || pending}
+            >
+              {pending && (
+                <span className="animate-spin">
+                  <LoaderCircle size={16} />
+                </span>
+              )}{" "}
               Confirm
             </Button>
           </DialogFooter>
