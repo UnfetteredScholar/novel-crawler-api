@@ -1,7 +1,7 @@
-# from enum import Enum
+from enum import Enum
 from typing import Annotated, Any, List, Optional
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, Field
 
 # class OutputFormat(str, Enum):
 #     json = "json"
@@ -41,20 +41,28 @@ class NovelInfo(BaseModel):
     tags: Annotated[List[str], BeforeValidator(verify_tags)]
     url: str
     chapters: int
+    chapter_titles: List[str] = []
     volumes: int
 
 
 class DownloadParameters(BaseModel):
     url: str
-    start_chapter: Optional[int] = None
-    end_chapter: Optional[int] = None
+    start_chapter: Optional[int] = Field(default=None, ge=1)
+    end_chapter: Optional[int] = Field(default=None, ge=1)
     # formats: List[OutputFormat]
+
+
+class DownloadStatus(str, Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class DownloadProgress(BaseModel):
     title: str
     author: str
     url: str
+    status: DownloadStatus
     progress: int
     chapters: int
     download_url: Optional[str] = None

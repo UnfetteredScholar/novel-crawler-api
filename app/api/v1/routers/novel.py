@@ -2,7 +2,7 @@ import os
 import shutil
 from datetime import datetime, timedelta
 from logging import getLogger
-from typing import Dict, Literal
+from typing import Dict, Literal, Union
 from uuid import uuid4
 
 from apscheduler.triggers.date import DateTrigger
@@ -11,12 +11,17 @@ from core.novel_downloader import NovelDownloader
 from fastapi import APIRouter, HTTPException
 from fastapi.background import BackgroundTasks
 from fastapi.responses import FileResponse
-from schemas.novel import DownloadParameters, DownloadProgress, NovelInfo
+from schemas.novel import (
+    DownloadParameters,
+    DownloadProgress,
+    DownloadStatus,
+    NovelInfo,
+)
 
 router = APIRouter()
 
 
-DOWNLOADS = {}
+DOWNLOADS: Dict[str, Union[DownloadProgress, NovelDownloader]] = {}
 
 
 def delete_download(id: str):
@@ -48,9 +53,7 @@ def start_download(
             start_chapter=start_chapter,
             end_chapter=end_chapter,
         )
-        run_time = datetime.now() + timedelta(
-            days=settings.DOWNLOAD_EXPIRE_DAYS
-        )
+        run_time = datetime.now() + timedelta(days=settings.DOWNLOAD_EXPIRE_DAYS)
         kwargs = {"id": id}
         scheduler.add_job(
             func=delete_download,
@@ -58,9 +61,17 @@ def start_download(
             kwargs=kwargs,
         )
     except Exception as ex:
-        logger.error(ex, stack_info=True)
-        if id in DOWNLOADS:
-            del DOWNLOADS[id]
+        logger.exception(ex)
+        DOWNLOADS[id] = DownloadProgress(
+            title=downloader.app.crawler.novel_title,
+            author=downloader.app.crawler.novel_author,
+            url=downloader.app.crawler.novel_url,
+            chapters=len(downloader.app.crawler.chapters),
+            progress=downloader.app.progress,
+            status=DownloadStatus.FAILED,
+        )
+        logger.info(DOWNLOADS[id])
+        logger.info(f"Download ({id}) stopped")
         raise ex
 
 
@@ -89,15 +100,14 @@ def get_novel_info(url: str):  # -> NovelInfo:
             url=downloader.app.crawler.novel_url,
             volumes=len(downloader.app.crawler.volumes),
             chapters=len(downloader.app.crawler.chapters),
+            chapter_titles=[chap.title for chap in downloader.app.crawler.chapters],
         )
 
         return info
 
     except Exception as ex:
         logger.error(ex, stack_info=True)
-        raise HTTPException(
-            status_code=500, detail="Unable to fetch novel info"
-        )
+        raise HTTPException(status_code=500, detail="Unable to fetch novel info")
 
 
 @router.post(
@@ -134,32 +144,33 @@ def start_novel_download(
 
     except Exception as ex:
         logger.error(ex, stack_info=True)
-        raise HTTPException(
-            status_code=500, detail="Unable to start novel download"
-        )
+        raise HTTPException(status_code=500, detail="Unable to start novel download")
 
 
-@router.get(
-    path="/novel/downloads/{download_id}", response_model=DownloadProgress
-)
+@router.get(path="/novel/downloads/{download_id}", response_model=DownloadProgress)
 def check_progress(download_id: str) -> DownloadProgress:
     """Gets the download progress of a novel"""
     logger = getLogger(__name__ + ".check_progress")
     try:
-        downloader: NovelDownloader = DOWNLOADS.get(download_id)
+        downloader = DOWNLOADS.get(download_id)
         if downloader is None:
             raise HTTPException(status_code=404, detail="Download not found")
 
-        info = DownloadProgress(
-            title=downloader.app.crawler.novel_title,
-            author=downloader.app.crawler.novel_author,
-            url=downloader.app.crawler.novel_url,
-            chapters=len(downloader.app.crawler.chapters),
-            progress=downloader.app.progress,
-        )
-
-        if info.progress == info.chapters:
-            info.download_url = f"/novel/{download_id}"
+        if isinstance(downloader, NovelDownloader):
+            info = DownloadProgress(
+                title=downloader.app.crawler.novel_title,
+                author=downloader.app.crawler.novel_author,
+                url=downloader.app.crawler.novel_url,
+                chapters=len(downloader.app.crawler.chapters),
+                progress=downloader.app.progress,
+                status=DownloadStatus.RUNNING,
+            )
+            if info.progress == info.chapters:
+                info.download_url = f"/novel/{download_id}"
+                info.status = DownloadStatus.COMPLETED
+                DOWNLOADS[download_id] = info
+        elif isinstance(downloader, DownloadProgress):
+            info = downloader
 
         return info
     except HTTPException as ex:
@@ -167,9 +178,7 @@ def check_progress(download_id: str) -> DownloadProgress:
         raise ex
     except Exception as ex:
         logger.error(ex, stack_info=True)
-        raise HTTPException(
-            status_code=500, detail="Unable to fetch novel info"
-        )
+        raise HTTPException(status_code=500, detail="Unable to fetch novel info")
 
 
 @router.get(path="/novel/{download_id}")
@@ -178,9 +187,7 @@ def download_novel_file(download_id: str) -> FileResponse:
     logger = getLogger(__name__ + ".check_progress")
     try:
 
-        output_folder = os.path.join(
-            settings.DOWNLOAD_FOLDER, download_id, "epub"
-        )
+        output_folder = os.path.join(settings.DOWNLOAD_FOLDER, download_id, "epub")
 
         if not os.path.exists(output_folder):
             raise HTTPException(status_code=404, detail="File not found")
@@ -202,6 +209,4 @@ def download_novel_file(download_id: str) -> FileResponse:
         raise ex
     except Exception as ex:
         logger.error(ex, stack_info=True)
-        raise HTTPException(
-            status_code=500, detail="Unable to fetch novel info"
-        )
+        raise HTTPException(status_code=500, detail="Unable to fetch novel info")
